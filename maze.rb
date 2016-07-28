@@ -14,7 +14,6 @@ class Maze
   def get_start_and_finish
     Tile.maze = self
     @tiles.each_with_index do |row, x|
-      p row.class
       row.each_with_index do |tile, y|
         @start = tile if tile.value == "S"
         @finish = tile if tile.value == "E"
@@ -98,7 +97,18 @@ class Maze_solver
       end
       print "\n"
     end
-    path = astar(@maze.start, @maze.finish, @maze_array)
+    puts 'visualize? y/n'
+    ans = $stdin.gets.chomp.downcase
+    if ans == 'y'
+      puts "visualization speed: 1, 2, or 3?"
+      ans = $stdin.gets.chomp
+      ans = 1 if ans == "0"
+      ans == "1" || ans == "2" ? ans = ans : ans = 3
+      visualize = 1 / (ans.to_f)
+    else
+      visualize = nil
+    end
+    path = astar(@maze.start, @maze.finish, @maze_array, visualize)
     system "clear" or system "cls"
     path[1...-1].each do |el|
       @maze_array[el.yv][el.xv] = "x"
@@ -107,29 +117,34 @@ class Maze_solver
     puts "#{@attempts} paths atempted before solution found."
   end
 
-  def astar(start, finish, array)
+  def astar(start, finish, array, visualize)
+
+
     queue = []
     queue << [start]
     @attempts = 1
     until queue.empty?
-      array1 = @maze_array.clone
-      array1.map!.with_index{|el, i| @maze_array[i].dup}
       path = queue.shift
-      path.each do |el|
-        array1[el.yv][el.xv] = "o"
+
+      if visualize
+        array1 = @maze_array.clone
+        array1.map!.with_index{|el, i| @maze_array[i].dup}
+        path.each do |el|
+          array1[el.yv][el.xv] = "o"
+        end
       end
       path.last.walkable_neighbours.each do |el|
         return [path + [el]].flatten if el.value == "E"
         queue << [[path] + [el]].flatten unless queue.any?{|x| x.include?(el)}
-        array1[el.yv][el.xv] = "?"
+        array1[el.yv][el.xv] = "?" if visualize
       end
       @attempts += 1
       k = @attempts % 4
       system "clear" or system "cls"
-      puts array1
+      puts array1 if visualize
       puts "Solving. Please wait" + "." * k
       puts "#{@attempts} paths atempted so far."
-      sleep(0.1)
+      sleep(0.1 * visualize) if visualize
       queue = queue.sort_by{|el| el.length + ((((el.last.xv - finish.xv)**2) + (el.last.yv - finish.yv)**2)**(0.5))}
       queue.map!(&:flatten)
       queue = queue.uniq
@@ -140,6 +155,5 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   maze = Maze_solver.parse_maze(ARGV[0])
-  puts maze.maze.tiles
   maze.solve_maze
 end
