@@ -1,4 +1,3 @@
-require 'byebug'
 
 class Maze
   attr_reader :tiles, :start, :finish
